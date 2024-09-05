@@ -1,0 +1,26 @@
+
+syntax = "proto3";
+
+option go_package = "lengfengbyit/go-demos/grpc/hello";
+
+package hello;
+
+// 定义服务
+service Greeter {
+  // 定义方法
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// 请求参数
+// message 关键字用于定义数据结构，说明如下：
+//  容器：每一个字段都有一个唯一整数作为标识，并且需要指定数据类型；
+//  数据类型：支持级别类型如 int32, string 等， 也可以嵌套其他 message 类型；
+//  可选属性：可以为字段指定 required, optional, repeated 等属性来控制序列化的行为；
+message HelloRequest {
+  string name = 1;
+}
+
+// 返回参数
+message HelloReply {
+  string message = 1;
+}
