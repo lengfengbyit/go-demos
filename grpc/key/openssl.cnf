@@ -1,0 +1,24 @@
+[ req ]
+default_bits = 2048
+prompt = no
+default_md = sha256
+distinguished_name = dn
+req_extensions = v3_req
+
+[ dn ]
+C = US
+ST = California
+L = San Francisco
+O = Example Inc.
+OU = IT
+CN = example.com
+
+[ v3_req ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = example.com
+DNS.2 = www.example.com
+
+[ CA_default ]
+copy_extensions = copy

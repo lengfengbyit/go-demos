@@ -1,14 +1,20 @@
-
 syntax = "proto3";
 
-option go_package = "lengfengbyit/go-demos/grpc/hello";
-
+// protoc -I ${GOPATH}/pkg/mod/github.com/googleapis/googleapis@v0.0.0-20240906180343-9aad398cf463 -I ./ --go_out=plugins=grpc:. ./hello.proto
 package hello;
+
+import "google/api/annotations.proto";
+
+option go_package = "lengfengbyit/go-demos/grpc/hello";
 
 // 定义服务
 service Greeter {
   // 定义方法
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  rpc SayHello (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      get: "/hello/{name}"
+    };
+  }
 }
 
 // 请求参数
