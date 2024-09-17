@@ -36,7 +36,8 @@ func httpPost(url string, params map[string]any) []byte {
 }
 
 // httpPostStream 流式读取响应体
-func httpPostStream(url string, params map[string]any, dataCh chan<- []byte) {
+func httpPostStream(url string, params map[string]any, pw io.Writer) {
+
 	client := &http.Client{}
 
 	paramsJson, err := json.Marshal(params)
@@ -52,19 +53,26 @@ func httpPostStream(url string, params map[string]any, dataCh chan<- []byte) {
 	panicOnError(err)
 	defer resp.Body.Close()
 
-	defer close(dataCh)
-
-	// 逐块读取响应体
-	bodyReader := resp.Body
-	buf := make([]byte, 1024)
-	for {
-		n, err := bodyReader.Read(buf)
-		if err != nil && err != io.EOF {
-			panic(err)
-		}
-		if n == 0 {
-			break
-		}
-		dataCh <- buf[:n]
+	if ppw, ok := pw.(*io.PipeWriter); ok {
+		defer ppw.Close()
 	}
+
+	_, err = io.Copy(pw, resp.Body)
+	panicOnError(err)
+
+	//defer close(dataCh)
+	//
+	//// 逐块读取响应体
+	//bodyReader := resp.Body
+	//buf := make([]byte, 1024)
+	//for {
+	//	n, err := bodyReader.Read(buf)
+	//	if err != nil && err != io.EOF {
+	//		panic(err)
+	//	}
+	//	if n == 0 {
+	//		break
+	//	}
+	//	dataCh <- buf[:n]
+	//}
 }

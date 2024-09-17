@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
@@ -8,6 +9,25 @@ import (
 	"testing"
 )
 
+func TestChan(t *testing.T) {
+	doneCh := make(chan struct{})
+	dataCh := make(chan []byte, 10)
+	go func() {
+		for data := range dataCh {
+			fmt.Println(string(data))
+		}
+		doneCh <- struct{}{}
+	}()
+
+	for i := 0; i < 20; i++ {
+		buf := make([]byte, 10)
+		by := []byte(fmt.Sprintf("hello %d", i))
+		n, _ := bytes.NewReader(by).Read(buf[0:])
+		dataCh <- buf[:n]
+	}
+	close(dataCh)
+	<-doneCh
+}
 func TestSign(t *testing.T) {
 
 	var (

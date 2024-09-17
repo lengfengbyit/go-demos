@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -53,20 +54,36 @@ func CnCompositionRevise(content string) {
 		"messages":  messages,
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
-
-	dataCh := make(chan []byte, 10)
+	/*
+		dataCh := make(chan []byte, 10)
+		go func() {
+			for body := range dataCh {
+				var data CnCompositionReviseResp
+				_ = json.Unmarshal(body, &data)
+				if data.Code != 20000 {
+					continue
+				}
+				fmt.Print(data.Data.Result)
+			}
+		}()*/
+	pr, pw := io.Pipe()
 	go func() {
-		for body := range dataCh {
+		buf := make([]byte, 1024)
+		for {
+			n, err := pr.Read(buf[0:])
+			if n == 0 {
+				break
+			}
+			panicOnError(err)
 			var data CnCompositionReviseResp
-			_ = json.Unmarshal(body, &data)
+			_ = json.Unmarshal(buf[:n], &data)
 			if data.Code != 20000 {
 				continue
 			}
 			fmt.Print(data.Data.Result)
 		}
 	}()
-
-	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, dataCh)
+	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, pw)
 }
 
 // GetCompositionContent 获取作文内容
