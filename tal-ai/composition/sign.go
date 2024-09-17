@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"maps"
 	"net/url"
 	"slices"
@@ -39,7 +38,6 @@ func createSign(secret string, body map[string]any, urlParams map[string]string)
 
 	delete(signParams, "request_body")
 	signParams["signature"] = url.QueryEscape(signature)
-	fmt.Println("signature:", signParams["signature"])
 
 	return urlFormat(signParams)
 }
