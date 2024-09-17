@@ -54,7 +54,6 @@ func CnCompositionRevise(content string) {
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
 
-	done := make(chan struct{})
 	dataCh := make(chan []byte, 10)
 	go func() {
 		for body := range dataCh {
@@ -65,11 +64,9 @@ func CnCompositionRevise(content string) {
 			}
 			fmt.Print(data.Data.Result)
 		}
-		done <- struct{}{}
 	}()
 
 	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, dataCh)
-	<-done
 }
 
 // GetCompositionContent 获取作文内容
