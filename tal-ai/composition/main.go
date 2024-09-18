@@ -11,13 +11,18 @@ import (
 // 手写识别
 
 const (
-	CN_COMPOSITION_URL        = "http://openai.100tal.com/aiimage/cn-composition"             // 中文手写识别
-	CN_COMPOSITION_REVISE_URL = "https://openai.100tal.com/aimathgpt/ch-compostion"           // 中文作文批改
-	CN_COMPOSITION_TEXT_URL   = "http://openai.100tal.com/aitext/ch-composition/text-content" // 中文作文错字修正
-	EN_OCR_URL                = "http://openai.100tal.com/aiocr/english-ocr"                  // 英文 OCR
-	EN_COMPOITION_URL         = "https://openai.100tal.com/aimathgpt/en-compostion"           // 英文作文批改
-	IMG_URL                   = "../imgs/pic_fangge.jpg"
-	EN_IMG_URL                = "../imgs/en.jpg"
+	CN_COMPOSITION_URL            = "http://openai.100tal.com/aiimage/cn-composition"                // 中文手写识别
+	CN_COMPOSITION_REVISE_URL     = "https://openai.100tal.com/aimathgpt/ch-compostion"              // 中文作文批改
+	CN_COMPOSITION_TEXT_URL       = "http://openai.100tal.com/aitext/ch-composition/text-content"    // 中文作文错字修正
+	CN_COMPOSITION_CORRECTION_URL = "http://openai.100tal.com/aitext/ch-composition/text-correction" // 中文作文批改, 聚合接口，支持从主题、结构、内容、表达四个维度，进行分项评分和综合评分。
+	EN_OCR_URL                    = "http://openai.100tal.com/aiocr/english-ocr"                     // 英文 OCR
+	EN_COMPOITION_URL             = "https://openai.100tal.com/aimathgpt/en-compostion"              // 英文作文批改
+
+)
+
+const (
+	IMG_URL    = "../imgs/fdj.jpg"
+	EN_IMG_URL = "../imgs/en.jpg"
 )
 
 var (
@@ -29,12 +34,31 @@ func main() {
 	//EnOcr()
 	//EnComposition()
 
-	compResp := CnComposition()
+	//compResp := CnComposition()
 	//title, content := GetCompositionContent(compResp)
 	//CnCompositionRevise(title + "\n" + content)
 
-	CnCompositionText(compResp)
+	//CnCompositionText(compResp)
 
+	CnCompositionCorrection()
+
+}
+
+func CnCompositionCorrection() {
+	params := map[string]any{
+		"user_id":      "111",
+		"user_name":    "张三",
+		"grade":        3,
+		"topic_type":   1,
+		"requirement":  2,
+		"is_fragment":  1,
+		"answer_title": "孵蛋记",
+		"answer_url":   []string{"https://img.xiaohuasheng.cn/267734/ExperienceImage/choose0.6245587831735514.jpg"},
+	}
+
+	urlParams := createSign(APP_SECRET, params, nil)
+	resp := httpPost(CN_COMPOSITION_CORRECTION_URL+"?"+urlParams, params)
+	fmt.Printf("%+v\n", string(resp))
 }
 
 func CnCompositionText(compResp *CnCompositionResp) {
@@ -79,14 +103,29 @@ func CnCompositionText(compResp *CnCompositionResp) {
 }
 
 func CnCompositionRevise(content string) {
-	prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
+	//prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
+	//	"1、知识范围：小学。" +
+	//	"2、对话风格：鼓励型。" +
+	//	"3、每个段落的点评请以'作文第一段点评'、'作文第二段点评'等格式开头。完成每段的点评后，请直接结束回答，不需要添加任何总结性的话语或结尾语。" +
+	//	"4、最后一段点评完后，直接结束输出，不要总结。" +
+	//	"5、不要举例子，不要引用原文，并且忽略作文中出现的错别字、打字错误或者用词错误的问题。" +
+	//	"6、从文章整体去分析，不需要说明文章字、词、句子的具体细节错误，不要分析作文中表达不准确的错误。" +
+	//	"7、一句话说明优点，一句话说明缺点，一句话给出建议，三句话连成一段。"
+
+	prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文分别对优美词语、优美句子、思路结构进行点评，并输出作文的评分，满分 100分，最低 0 分，你输出的要求如下：" +
 		"1、知识范围：小学。" +
 		"2、对话风格：鼓励型。" +
-		"3、每个段落的点评请以'作文第一段点评'、'作文第二段点评'等格式开头。完成每段的点评后，请直接结束回答，不需要添加任何总结性的话语或结尾语。" +
-		"4、最后一段点评完后，直接结束输出，不要总结。" +
-		"5、不要举例子，不要引用原文，并且忽略作文中出现的错别字、打字错误或者用词错误的问题。" +
-		"6、从文章整体去分析，不需要说明文章字、词、句子的具体细节错误，不要分析作文中表达不准确的错误。" +
-		"7、一句话说明优点，一句话说明缺点，一句话给出建议，三句话连成一段。"
+		"3、输出结果为 json 字符串" +
+		"4、优美句子的属性名为 'sents', 值为键值对，键为优美句子，值为点评。" +
+		"5、优美单词的属性名为 'words', 值为键值对，键为优单词，值为点评。" +
+		"6、思路结构的属性名为 'idea', 值为作文思路结构总结，字符串类型。" +
+		"7、分数的属性名为 'sorce', 值为作为分数，数字类型。" +
+		"8、点评的属性名 'review', 值为点评内容，字符串类型。" +
+		"9、属性名：'img', 属性值为优化后作文结构的思维导图的图片url"
+	//"3、以 '优美句子：' 为开头对作文中的优美句子进行点评，可以有零个或多个。" +
+	//"4、以 '优美词语：' 为开头对作文中的优美词语进行点评，可以有零个或多个。" +
+	//"5、以 '思路结构：' 为开头对作文的思路结构进行点评, 只能有一个。" +
+	//"6、以 '分数：' 为开头，输出对作文的打分。"
 	message := &Message{
 		Role:    "user",
 		Content: prompt + content,
