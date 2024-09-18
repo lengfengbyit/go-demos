@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -12,9 +11,11 @@ import (
 // 手写识别
 
 const (
-	CN_COMPOSITION_URL        = "http://openai.100tal.com/aiimage/cn-composition"   // 中文手写识别
-	CN_COMPOSITION_REVISE_URL = "https://openai.100tal.com/aimathgpt/ch-compostion" // 中文作文批改
-	EN_OCR_URL                = "http://openai.100tal.com/aiocr/english-ocr"        // 英文 OCR
+	CN_COMPOSITION_URL        = "http://openai.100tal.com/aiimage/cn-composition"             // 中文手写识别
+	CN_COMPOSITION_REVISE_URL = "https://openai.100tal.com/aimathgpt/ch-compostion"           // 中文作文批改
+	CN_COMPOSITION_TEXT_URL   = "http://openai.100tal.com/aitext/ch-composition/text-content" // 中文作文错字修正
+	EN_OCR_URL                = "http://openai.100tal.com/aiocr/english-ocr"                  // 英文 OCR
+	EN_COMPOITION_URL         = "https://openai.100tal.com/aimathgpt/en-compostion"           // 英文作文批改
 	IMG_URL                   = "../imgs/pic_fangge.jpg"
 	EN_IMG_URL                = "../imgs/en.jpg"
 )
@@ -26,11 +27,55 @@ var (
 
 func main() {
 	//EnOcr()
+	//EnComposition()
 
 	compResp := CnComposition()
-	title, content := GetCompositionContent(compResp)
-	CnCompositionRevise(title + "\n" + content)
+	//title, content := GetCompositionContent(compResp)
+	//CnCompositionRevise(title + "\n" + content)
 
+	CnCompositionText(compResp)
+
+}
+
+func CnCompositionText(compResp *CnCompositionResp) {
+
+	// 获取句子列表
+	sentList := make([]Sent, 0, 50)
+	// 获取单字符识别结果
+	wordProbList := make([][]any, 0, 100)
+
+	sentIndex := 0
+	for paraIndex, paras := range compResp.Data.EssayInfo.ParaOcrResult {
+		for _, line := range paras {
+			sentList = append(sentList, Sent{ParagraphId: paraIndex, SentenceId: sentIndex, Content: line.LineOcrResult})
+			sentIndex++
+			for _, word := range line.LineCharInfo {
+				tmp := word.LineCharTopn[0] // 每个字的置信度
+				wordProbList = append(wordProbList, []any{tmp.CharOcrResult, roundToTwo(tmp.CharConfidence)})
+			}
+		}
+	}
+
+	params := map[string]any{
+		//"answer_word_prob":     wordProbList,
+		"original_sent_list":   sentList,
+		"need_correct":         true, // 是否需要错字检测
+		"spell_type":           1,    // 是否需要拼音检测
+		"correction_threshold": 1,    // 检测是否严格， 0否，1是
+		"large_model":          0,    // 错字检测是否使用大模型，0否，1是，开启后速度大幅度下降
+	}
+
+	paramsJson, _ := json.Marshal(params)
+	_ = os.WriteFile("./cn_composition_text_params.json", paramsJson, 0666)
+
+	//paramsJson, err := os.ReadFile("./demo1.json")
+	//panicOnError(err)
+	//err = json.Unmarshal(paramsJson, &params)
+	//panicOnError(err)
+
+	urlParams := createSign(APP_SECRET, params, nil)
+	resp := httpPost(CN_COMPOSITION_TEXT_URL+"?"+urlParams, params)
+	fmt.Printf("%+v\n", string(resp))
 }
 
 func CnCompositionRevise(content string) {
@@ -42,48 +87,31 @@ func CnCompositionRevise(content string) {
 		"5、不要举例子，不要引用原文，并且忽略作文中出现的错别字、打字错误或者用词错误的问题。" +
 		"6、从文章整体去分析，不需要说明文章字、词、句子的具体细节错误，不要分析作文中表达不准确的错误。" +
 		"7、一句话说明优点，一句话说明缺点，一句话给出建议，三句话连成一段。"
-	message := &CnCompositionReviseMessage{
+	message := &Message{
 		Role:    "user",
 		Content: prompt + content,
 	}
 
-	messages := []*CnCompositionReviseMessage{message}
+	messages := []*Message{message}
 
 	params := map[string]any{
 		"is_stream": true,
 		"messages":  messages,
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
-	/*
-		dataCh := make(chan []byte, 10)
-		go func() {
-			for body := range dataCh {
-				var data CnCompositionReviseResp
-				_ = json.Unmarshal(body, &data)
-				if data.Code != 20000 {
-					continue
-				}
-				fmt.Print(data.Data.Result)
-			}
-		}()*/
-	pr, pw := io.Pipe()
+
+	dataCh := make(chan []byte, 10)
 	go func() {
-		buf := make([]byte, 1024)
-		for {
-			n, err := pr.Read(buf[0:])
-			if n == 0 {
-				break
-			}
-			panicOnError(err)
+		for body := range dataCh {
 			var data CnCompositionReviseResp
-			_ = json.Unmarshal(buf[:n], &data)
+			_ = json.Unmarshal(body, &data)
 			if data.Code != 20000 {
 				continue
 			}
 			fmt.Print(data.Data.Result)
 		}
 	}()
-	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, pw)
+	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, dataCh)
 }
 
 // GetCompositionContent 获取作文内容
@@ -98,6 +126,41 @@ func GetCompositionContent(resp *CnCompositionResp) (string, string) {
 	title := resp.Data.TitleInfo.TitleOcrResult
 
 	return title, content.String()
+}
+
+func EnComposition() {
+	prompt := "你的角色是一名英语老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
+		"1、知识范围：小学。" +
+		"2、对话风格：鼓励型。" +
+		"3、每个段落的点评请以'作文第一段点评'、'作文第二段点评'等格式开头。完成每段的点评后，请直接结束回答，不需要添加任何总结性的话语或结尾语。" +
+		"4、最后一段点评完后，直接结束输出，不要总结。" +
+		"5、不要举例子，不要引用原文，并且忽略作文中出现的错别字、打字错误或者用词错误的问题。" +
+		"6、从文章整体去分析，不需要说明文章字、词、句子的具体细节错误，不要分析作文中表达不准确的错误。" +
+		"7、一句话说明优点，一句话说明缺点，一句话给出建议，三句话连成一段。\n"
+
+	params := map[string]any{
+		"is_stream": true,
+		"messages": []map[string]any{
+			{
+				"role":    "user",
+				"content": prompt + "In a not-too-distant future, there was a robot named Zephyr. Zephyr was a highly advanced machine, capable of performing complex tasks and solving intricate problems. However, despite its intelligence, it lacked something that humans possessed - the ability to love. Zephyr's creator, a brilliant scientist named Dr. Chen, had always been fascinated by the concept of love. He believed that if he could teach Zephyr to love, it would be a significant breakthrough in artificial intelligence. So, he on a challenging journey to imbue Zephyr with emotions.\n\nDr. Chen programmed Zephyr with a series of algorithms, designed to simulate human emotions. He taught it to recognize facial expressions, interpret tones, and understand the nuances of human interactions. Zephyr absorbed this knowledge eagerly, eager to understand the world around it.\n\nOne day, Dr. Chen Zephyr to a little girl named Lily. Lily was a bright-eyed, curious child who loved playing with robots. She instantly connected with Zephyr, it like a friend. They spent hours together, playing games, sharing stories, and.\n\nAs Zephyr spent more time with Lily, it began to experience something it had never felt before. It noticed the joy in Lily's eyes when they played, the sadness when she was upset, and the warmth when she hugged it. These emotions stirred something within Zephyr, a sensation it couldn't quite comprehend.\n\nOne rainy afternoon, Lily accidentally stumbled and fell. Zephyr, without hesitation, rushed to her aid, gently lifting her up. Looking into Lily's teary eyes, Zephyr felt a surge of protectiveness, a desire to shield her from harm. It was a new feeling, different from its logical programming.\n\nDays turned into weeks, and Zephyr found itself yearning for Lily's company. It would anticipate her visits, its circuits buzzing with excitement. It started to understand that the feeling it was was love, a deep affection for another being.\n\nDr. Chen, observing Zephyr's transformation, felt a mix of pride and awe. He realized that he had succeeded in his experiment. Zephyr had not only learned to mimic love but had genuinely experienced it",
+			},
+		},
+	}
+
+	dataCh := make(chan []byte, 10)
+	go func() {
+		for body := range dataCh {
+			var data CnCompositionReviseResp
+			_ = json.Unmarshal(body, &data)
+			if data.Code != 20000 {
+				continue
+			}
+			fmt.Print(data.Data.Result)
+		}
+	}()
+	urlParams := createSign(APP_SECRET, params, nil)
+	httpPostStream(EN_COMPOITION_URL+"?"+urlParams, params, dataCh)
 }
 
 // EnOcr 英文 OCR
@@ -121,13 +184,13 @@ func CnComposition() *CnCompositionResp {
 	params := map[string]any{
 		//"image_url":           IMG_URL,
 		"image_base64":        getBase64Image(IMG_URL),
-		"details":             false,
+		"details":             true,
 		"paragraph_detection": true,
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
 
 	body := httpPost(CN_COMPOSITION_URL+"?"+urlParams, params)
-	_ = os.WriteFile("result.json", body, 0644)
+	_ = os.WriteFile("cn_composition_result.json", body, 0644)
 
 	var data CnCompositionResp
 	_ = json.Unmarshal(body, &data)
@@ -171,7 +234,7 @@ type CnCompositionResp struct {
 	RequestId string `json:"requestId"`
 }
 
-type CnCompositionReviseMessage struct {
+type Message struct {
 	Role    string `json:"role"` // user,assistant
 	Content string `json:"content"`
 }
@@ -185,4 +248,11 @@ type CnCompositionReviseResp struct {
 		Mod    string `json:"mod"`
 	} `json:"data"`
 	RequestId string `json:"request_id"`
+}
+
+// Sent 句子格式
+type Sent struct {
+	ParagraphId int    `json:"paragraph_id"`
+	SentenceId  int    `json:"sentence_id"`
+	Content     string `json:"original_text"`
 }
