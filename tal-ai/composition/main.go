@@ -5,18 +5,20 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 // 手写识别
 
 const (
-	CN_COMPOSITION_URL            = "http://openai.100tal.com/aiimage/cn-composition"                // 中文手写识别
-	CN_COMPOSITION_REVISE_URL     = "https://openai.100tal.com/aimathgpt/ch-compostion"              // 中文作文批改
-	CN_COMPOSITION_TEXT_URL       = "http://openai.100tal.com/aitext/ch-composition/text-content"    // 中文作文错字修正
-	CN_COMPOSITION_CORRECTION_URL = "http://openai.100tal.com/aitext/ch-composition/text-correction" // 中文作文批改, 聚合接口，支持从主题、结构、内容、表达四个维度，进行分项评分和综合评分。
-	EN_OCR_URL                    = "http://openai.100tal.com/aiocr/english-ocr"                     // 英文 OCR
-	EN_COMPOITION_URL             = "https://openai.100tal.com/aimathgpt/en-compostion"              // 英文作文批改
+	CN_COMPOSITION_URL            = "http://openai.100tal.com/aiimage/cn-composition"                          // 中文手写识别
+	CN_COMPOSITION_GPT_URL        = "https://openai.100tal.com/aimathgpt/ch-compostion"                        // 中文作文批改
+	CN_COMPOSITION_TEXT_URL       = "http://openai.100tal.com/aitext/ch-composition/text-content"              // 中文作文错字修正
+	CN_COMPOSITION_CORRECTION_URL = "http://openai.100tal.com/aitext/ch-composition/text-correction"           // 中文作文批改, 聚合接口，支持从主题、结构、内容、表达四个维度，进行分项评分和综合评分。
+	EN_OCR_URL                    = "http://openai.100tal.com/aiocr/english-ocr"                               // 英文 OCR
+	EN_COMPOITION_URL             = "https://openai.100tal.com/aimathgpt/en-compostion"                        // 英文作文批改
+	EN_COMPOITION_CORRETION_URL   = "http://openai.100tal.com/aitext/english-composition/text-correction/text" // 英文作文批改 聚合接口
 
 )
 
@@ -33,14 +35,15 @@ var (
 func main() {
 	//EnOcr()
 	//EnComposition()
+	//EnCompositionCorrection()
 
-	//compResp := CnComposition()
-	//title, content := GetCompositionContent(compResp)
-	//CnCompositionRevise(title + "\n" + content)
+	compResp := CnComposition(IMG_URL)
+	title, content := GetCompositionContent(compResp)
+	CnCompositionGPT(title + "\n" + content)
 
 	//CnCompositionText(compResp)
 
-	CnCompositionCorrection()
+	//CnCompositionCorrection()
 
 }
 
@@ -102,7 +105,7 @@ func CnCompositionText(compResp *CnCompositionResp) {
 	fmt.Printf("%+v\n", string(resp))
 }
 
-func CnCompositionRevise(content string) {
+func CnCompositionGPT(content string) {
 	//prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
 	//	"1、知识范围：小学。" +
 	//	"2、对话风格：鼓励型。" +
@@ -139,18 +142,25 @@ func CnCompositionRevise(content string) {
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
 
-	dataCh := make(chan []byte, 10)
+	dataCh := make(chan []byte, 20)
 	go func() {
+		i := 0
 		for body := range dataCh {
-			var data CnCompositionReviseResp
-			_ = json.Unmarshal(body, &data)
-			if data.Code != 20000 {
-				continue
-			}
-			fmt.Print(data.Data.Result)
+			i++
+			fpath, _ := filepath.Abs(fmt.Sprintf("./cn_composition_gpt_result_%d.json", i))
+			//var data CnCompositionReviseResp
+			//err := json.Unmarshal(body, &data)
+			//if err != nil {
+			//	panic(err)
+			//}
+			//if data.Code != 20000 {
+			//	continue
+			//}
+			//fmt.Print(data.Data.Result)
+			os.WriteFile(fpath, body, 0666)
 		}
 	}()
-	httpPostStream(CN_COMPOSITION_REVISE_URL+"?"+urlParams, params, dataCh)
+	httpPostStream(CN_COMPOSITION_GPT_URL+"?"+urlParams, params, dataCh)
 }
 
 // GetCompositionContent 获取作文内容
@@ -167,6 +177,20 @@ func GetCompositionContent(resp *CnCompositionResp) (string, string) {
 	return title, content.String()
 }
 
+func EnCompositionCorrection() {
+	params := map[string]any{
+		"question":           "my teacher",
+		"content":            "there is no need to use a human to revise a passage. We am looking forward to settle down this using an easy way.   We decided to take part in this activity last week.",
+		"min_content_length": 200,
+		"grade":              "KET",
+		"question_type":      0,
+	}
+
+	urlParams := createSign(APP_SECRET, params, nil)
+	resp := httpPost(EN_COMPOITION_CORRETION_URL+"?"+urlParams, params)
+	os.WriteFile("./en_composition_correction_params.json", resp, 0666)
+	fmt.Println("success")
+}
 func EnComposition() {
 	prompt := "你的角色是一名英语老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
 		"1、知识范围：小学。" +
@@ -212,17 +236,18 @@ func EnOcr() {
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
 	body := httpPost(EN_OCR_URL+"?"+urlParams, params)
+	_ = os.WriteFile("en_ocr_result.json", body, 0644)
 	fmt.Printf("%+v\n", string(body))
 }
 
 // CnComposition 中文手写识别
-func CnComposition() *CnCompositionResp {
+func CnComposition(imgPath string) *CnCompositionResp {
 	if APP_KEY == "" || APP_SECRET == "" {
 		log.Fatal("APP_KEY or APP_SECRET is empty")
 	}
 	params := map[string]any{
 		//"image_url":           IMG_URL,
-		"image_base64":        getBase64Image(IMG_URL),
+		"image_base64":        getBase64Image(imgPath),
 		"details":             true,
 		"paragraph_detection": true,
 	}

@@ -1,71 +1,72 @@
 package main
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestChan(t *testing.T) {
-	doneCh := make(chan struct{})
-	dataCh := make(chan []byte, 10)
-	go func() {
-		for data := range dataCh {
-			fmt.Println(string(data))
-		}
-		doneCh <- struct{}{}
-	}()
+const (
+	AI_SUBJECt_CLF_URL = "http://openai.100tal.com/ai-subject-clf"        // 判断输入文本所属学科
+	COM_EDUCATION_RUL  = "https://openai.100tal.com/aiimage/comeducation" // 教育通用 OCR
+)
 
-	for i := 0; i < 20; i++ {
-		buf := make([]byte, 10)
-		by := []byte(fmt.Sprintf("hello %d", i))
-		n, _ := bytes.NewReader(by).Read(buf[0:])
-		dataCh <- buf[:n]
-	}
-	close(dataCh)
-	<-doneCh
-}
-func TestSign(t *testing.T) {
+const (
+	ROOT = "/Users/tal/GolandProjects/go-demos/tal-ai/composition/"
+	// 语文作文孵蛋记
+	FDJ_IMG_URL = "https://img.xiaohuasheng.cn/267734/ExperienceImage/choose0.6245587831735514.jpg"
+	FA_IMG_URL  = "../imgs/zw.png"
+)
 
-	var (
-		access_key_id     = "4300865906099200"
-		access_key_secret = "7a810a4245534cdab787bd82d0a63ca9"
-	)
+type ParamMap map[string]any
 
-	body := map[string]any{
-		"key3": "value1",
-		"key4": "value2",
+func TestAiSubjectClf(t *testing.T) {
+	enTxt := "there is no need to use a human to revise a passage"
+
+	params := ParamMap{
+		"params": ParamMap{
+			"text": enTxt,
+		},
 	}
 
-	params := map[string]string{
-		"key1":            "value1",
-		"key2":            "value2",
-		"signature_nonce": "fd16bc90-08a5-4034-a06b-aa7004f9d0c5",
-		"timestamp":       "2020-04-14T11:11:30",
-		"access_key_id":   access_key_id,
-	}
-
-	_ = createSign(access_key_secret, body, params)
+	urlParams := createSign(APP_SECRET, params, nil)
+	resp := httpPost(AI_SUBJECt_CLF_URL+"?"+urlParams, params)
+	fmt.Println(string(resp))
 }
 
-func TestHmac(t *testing.T) {
+// 教育通用 OCR, 用于检测是否存在手写字体
+// 返回文字、文字的位置，没有段落信息；
+func TestComEducation(t *testing.T) {
+	params := ParamMap{
+		//"image_url":   FDJ_IMG_URL,
+		"image_base64": getBase64Image(FA_IMG_URL),
+		"function":     2,         // 全部类型检测+仅输出手写结果
+		"subject":      "liberat", // 文科，不识别公式
+		"textInTable":  true,      // 是否打印图片中表格里的文字
+		"textInImage":  true,      // 是否打印图片中的文字
+	}
 
-	accessKeySecret := "7a810a4245534cdab787bd82d0a63ca9"
-	//stringToSign := `access_key_id=4300865906099200&key1=value1&key2=value2&request_body={"key3":"value3","key4":"value4"}&signature_nonce=fd16bc90-08a5-4034-a06b-aa7004f9d0c5&timestamp=2020-04-14T11:11:30`
+	urlParams := createSign(APP_SECRET, params, nil)
+	resp := httpPost(COM_EDUCATION_RUL+"?"+urlParams, params)
+	fmt.Println(string(resp))
+	saveFile("./com_education_result.json", resp)
+}
 
-	// 计算证书签名
-	//stringToSign := "access_key_id=4300865906099200&key1=value1&key2=value2&request_body={\"key3\":\"value1\",\"key4\":\"value2\"}&signature_nonce=fd16bc90-08a5-4034-a06b-aa7004f9d0c5&timestamp=2020-04-14T11:11:30"
-	stringToSign := `access_key_id=4300865906099200&key1=value1&key2=value2&request_body={"key3":"value1","key4":"value2"}&signature_nonce=fd16bc90-08a5-4034-a06b-aa7004f9d0c5&timestamp=2020-04-14T11:11:30`
-	//stringToSign := `access_key_id=4300865906099200&key1=value1&key2=value2&request_body={"key3":"value3","key4":"value4"}&signature_nonce=fd16bc90-08a5-4034-a06b-aa7004f9d0c5&timestamp=2020-04-14T11:11:30`
+// 中文作文手写识别接口，识别出文字位置、段落信息
+func TestCnComposition(t *testing.T) {
+	resp := CnComposition("../imgs/pic_fangge.jpg")
+	t.Logf("%+v", resp)
+}
 
-	// 进行base64 encode
-	secret := accessKeySecret + "&"
-	h := hmac.New(sha1.New, []byte(secret))
-	h.Write([]byte(stringToSign))
-	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
-	fmt.Println(signature)
+// 大模型：语文作文批改，好词好句、评分、总评等
+func TestChCompositionGpt(t *testing.T) {
+	compResp := CnComposition("../imgs/zw.png") // 中文 OCR 获取文字内容
+	title, content := GetCompositionContent(compResp)
+	// 流式返回
+	CnCompositionGPT(title + "\n" + content)
+}
 
+func saveFile(filePath string, content []byte) {
+	_ = os.WriteFile(filepath.Join(ROOT, filePath), content, 0644)
 }
