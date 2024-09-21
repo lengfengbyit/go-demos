@@ -64,7 +64,8 @@ func CnCompositionCorrection() {
 	fmt.Printf("%+v\n", string(resp))
 }
 
-func CnCompositionText(compResp *CnCompositionResp) {
+// 错字批改
+func CnCompositionText(compResp *CnCompositionResp) []byte {
 
 	// 获取句子列表
 	sentList := make([]Sent, 0, 50)
@@ -103,6 +104,7 @@ func CnCompositionText(compResp *CnCompositionResp) {
 	urlParams := createSign(APP_SECRET, params, nil)
 	resp := httpPost(CN_COMPOSITION_TEXT_URL+"?"+urlParams, params)
 	fmt.Printf("%+v\n", string(resp))
+	return resp
 }
 
 func CnCompositionGPT(content string) {

@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package api.bff.v1;
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "pd-ask-anytime/api/bff/v1;v1";
+
+service AiComposition {
+  rpc ImageCheck (ImageCheckReq) returns (ImageCheckResp) {
+    option (google.api.http) = {
+      post: "/v1/ai/essay/image/check"
+      body: "*"
+    };
+  }
+}
+
+
+message ImageCheckReq {
+  string image_url = 1 [(validate.rules).string = {min_len: 1}];
+  repeated string check_items = 2[(validate.rules).repeated = {min_items: 1}]; // 图片检测的项目,可以是多个， 如： 模糊检测 no_fuzzy
+}
+message ImageCheckResp {
+  bool is_pass = 1; // 是否检测通过
+  string reason = 2; // 检测不通过的原因，在那个项目上没有检测通过
+}
+
+// 作文批改请求，提交作文图片链接
+message CompositionCorrectionReq {
+  repeated string image_urls = 1[(validate.rules).repeated = {min_items:1, max_items:5}];
+}
+
+message CompositionCorrectionResp {
+  message Point {
+    float X = 1;
+    float Y = 2;
+  }
+  // 段落的四个角坐标和第一个文字四角的坐标
+  message BoxPoint{
+    Point left_top = 1;
+    Point right_top = 2;
+    Point left_bottom = 3;
+    Point right_bottom = 4;
+  }
+
+  // 错字消息
+  message WrongWord {
+    string wrong_word = 1; // 错字内容
+    string correct_word = 2; // 修正后的内容
+    BoxPoint box = 3; // 错字位置
+  }
+
+  // 好词消息
+  message GoodWord {
+    string good_word = 1; // 好词内容
+    repeated BoxPoint box = 2; // 好词位置, 可能会换行
+  }
+
+  // 好句消息
+  message GoodSentence {
+    string good_sentence = 1; // 好句内容
+    repeated BoxPoint box = 2; // 好句位置，可能会换行
+  }
+
+  // 点评消息
+  message Comment {
+    bool is_title = 1;
+    string content = 2; // 点评内容
+  }
+
+  // 语法错误消息
+  message EnGrammarError {
+    string error_sentence = 1; // 错误句子
+    string correct_sentence = 2; // 修正后的内容
+    repeated BoxPoint box = 3; // 错误词位置
+  }
+
+  message EnStatistic {
+    int32 word_count = 1; // 总单词数
+    int32 sentence_count = 2; // 总句数
+    int32 spell_error_count = 3; // 拼写错误
+    int32 grammar_error_count = 4; // 语法错误
+  }
+
+  string session_id = 1; // 会话 ID
+  string msg_id = 2;
+  int32 msg_type = 3; // 消息类型； 1：终止 2： 段落，3：错字，4: 好词，5：好句, 6: 评分, 7: 全文点评，8：结构精评，9：英语语法错误，10：英语统计信息
+  int32 subject = 4; // 学科 ID
+
+  // 终止原因
+  int32 end_reason = 5; // 0：未结束 1：正常结束，2：未检测到手写内容，3: 学科不正确 4：图片违规
+
+  // 段落消息
+  BoxPoint paragraph_box = 6; // 段落的四个角的坐标
+  BoxPoint paragraph_first_word_box = 7; // 段落中第一个文字的四个角的坐标
+
+  // 错字修改消息
+  repeated WrongWord wrong_words = 8;
+
+  // 好词消息
+  repeated GoodWord good_words = 9;
+
+  // 好句消息
+  repeated GoodSentence good_sentences = 10;
+
+  // 评分消息
+  int32 score = 11;
+
+  // 全文点评
+  repeated Comment composition_comments = 12;
+
+  // 结构精评
+  repeated Comment structure_comment = 13;
+
+  // 英语语法错误
+  repeated EnGrammarError grammar_errors = 14;
+
+  // 英语统计
+  EnStatistic en_statistic = 15;
+}

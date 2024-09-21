@@ -67,6 +67,13 @@ func TestChCompositionGpt(t *testing.T) {
 	CnCompositionGPT(title + "\n" + content)
 }
 
+// 中文作文错字批改
+func TestCnCompositionText(t *testing.T) {
+	resp := CnComposition("../imgs/pic_fangge.jpg")
+	body := CnCompositionText(resp)
+	saveFile("cn_composition_text_result.json", body)
+}
+
 func saveFile(filePath string, content []byte) {
 	_ = os.WriteFile(filepath.Join(ROOT, filePath), content, 0644)
 }
