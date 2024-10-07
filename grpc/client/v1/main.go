@@ -38,4 +38,17 @@ func main() {
 	}
 
 	log.Printf("response: %v\n", response.GetMessage())
+
+	// 5. 发送 stream 请求
+	streamClient, err := client.Stream(context.Background(), requestParams)
+	if err != nil {
+		log.Fatalf("stream failed, err: %v\n", err)
+	}
+	for {
+		response, err := streamClient.Recv()
+		if err != nil {
+			log.Fatalf("stream failed, err: %v\n", err)
+		}
+		log.Printf("stream response: %v\n", response.GetMessage())
+	}
 }

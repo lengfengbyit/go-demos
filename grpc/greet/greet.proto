@@ -4,6 +4,7 @@ option go_package = ".;greet";
 
 service GreetService {
   rpc Greet(GreetRequest) returns (GreetResponse);
+  rpc Stream(GreetRequest) returns (stream GreetResponse);
 }
 
 message GreetRequest {

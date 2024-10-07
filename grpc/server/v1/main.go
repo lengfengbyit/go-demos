@@ -6,6 +6,7 @@ import (
 	pb "lengfengbyit/go-demos/grpc/greet"
 	"log"
 	"net"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -23,6 +24,20 @@ func (*server) Greet(ctx context.Context, in *pb.GreetRequest) (*pb.GreetRespons
 	return &pb.GreetResponse{
 		Message: fmt.Sprintf("Hello %s, age: %d, hobbits: %v", in.GetName(), in.GetAge(), in.GetHobbies()),
 	}, nil
+}
+
+func (*server) Stream(req *pb.GreetRequest, gs pb.GreetService_StreamServer) (err error) {
+	for i := 0; i < 100; i++ {
+		err = gs.Send(&pb.GreetResponse{
+			Message: fmt.Sprintf("%d,", i),
+		})
+		if err != nil {
+			fmt.Printf("error: %v", err)
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return
 }
 
 // 实现一个最简单的 rpc 服务端，不使用认证方式
