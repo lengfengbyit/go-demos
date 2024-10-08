@@ -19,7 +19,6 @@ const (
 	EN_OCR_URL                    = "http://openai.100tal.com/aiocr/english-ocr"                               // 英文 OCR
 	EN_COMPOITION_URL             = "https://openai.100tal.com/aimathgpt/en-compostion"                        // 英文作文批改
 	EN_COMPOITION_CORRETION_URL   = "http://openai.100tal.com/aitext/english-composition/text-correction/text" // 英文作文批改 聚合接口
-
 )
 
 const (
@@ -37,9 +36,9 @@ func main() {
 	//EnComposition()
 	//EnCompositionCorrection()
 
-	compResp := CnComposition(IMG_URL)
-	title, content := GetCompositionContent(compResp)
-	CnCompositionGPT(title + "\n" + content)
+	//compResp := CnComposition(IMG_URL)
+	//title, content := GetCompositionContent(compResp)
+	//CnCompositionGPT(title + "\n" + content)
 
 	//CnCompositionText(compResp)
 
@@ -71,12 +70,14 @@ func CnCompositionText(compResp *CnCompositionResp) []byte {
 	sentList := make([]Sent, 0, 50)
 	// 获取单字符识别结果
 	wordProbList := make([][]any, 0, 100)
+	var content string
 
 	sentIndex := 0
 	for paraIndex, paras := range compResp.Data.EssayInfo.ParaOcrResult {
 		for _, line := range paras {
 			sentList = append(sentList, Sent{ParagraphId: paraIndex, SentenceId: sentIndex, Content: line.LineOcrResult})
 			sentIndex++
+			content += line.LineOcrResult
 			for _, word := range line.LineCharInfo {
 				tmp := word.LineCharTopn[0] // 每个字的置信度
 				wordProbList = append(wordProbList, []any{tmp.CharOcrResult, roundToTwo(tmp.CharConfidence)})
@@ -87,19 +88,14 @@ func CnCompositionText(compResp *CnCompositionResp) []byte {
 	params := map[string]any{
 		//"answer_word_prob":     wordProbList,
 		"original_sent_list":   sentList,
+		"other_ocr_texts":      []string{content},
 		"need_correct":         true, // 是否需要错字检测
 		"spell_type":           1,    // 是否需要拼音检测
 		"correction_threshold": 1,    // 检测是否严格， 0否，1是
-		"large_model":          0,    // 错字检测是否使用大模型，0否，1是，开启后速度大幅度下降
 	}
 
 	paramsJson, _ := json.Marshal(params)
 	_ = os.WriteFile("./cn_composition_text_params.json", paramsJson, 0666)
-
-	//paramsJson, err := os.ReadFile("./demo1.json")
-	//panicOnError(err)
-	//err = json.Unmarshal(paramsJson, &params)
-	//panicOnError(err)
 
 	urlParams := createSign(APP_SECRET, params, nil)
 	resp := httpPost(CN_COMPOSITION_TEXT_URL+"?"+urlParams, params)
@@ -107,62 +103,36 @@ func CnCompositionText(compResp *CnCompositionResp) []byte {
 	return resp
 }
 
-func CnCompositionGPT(content string) {
-	//prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +
-	//	"1、知识范围：小学。" +
-	//	"2、对话风格：鼓励型。" +
-	//	"3、每个段落的点评请以'作文第一段点评'、'作文第二段点评'等格式开头。完成每段的点评后，请直接结束回答，不需要添加任何总结性的话语或结尾语。" +
-	//	"4、最后一段点评完后，直接结束输出，不要总结。" +
-	//	"5、不要举例子，不要引用原文，并且忽略作文中出现的错别字、打字错误或者用词错误的问题。" +
-	//	"6、从文章整体去分析，不需要说明文章字、词、句子的具体细节错误，不要分析作文中表达不准确的错误。" +
-	//	"7、一句话说明优点，一句话说明缺点，一句话给出建议，三句话连成一段。"
-
-	prompt := "你的角色是一名语文老师，我是一位三年级小学生，请对用户输入的作文分别对优美词语、优美句子、思路结构进行点评，并输出作文的评分，满分 100分，最低 0 分，你输出的要求如下：" +
-		"1、知识范围：小学。" +
-		"2、对话风格：鼓励型。" +
-		"3、输出结果为 json 字符串" +
-		"4、优美句子的属性名为 'sents', 值为键值对，键为优美句子，值为点评。" +
-		"5、优美单词的属性名为 'words', 值为键值对，键为优单词，值为点评。" +
-		"6、思路结构的属性名为 'idea', 值为作文思路结构总结，字符串类型。" +
-		"7、分数的属性名为 'sorce', 值为作为分数，数字类型。" +
-		"8、点评的属性名 'review', 值为点评内容，字符串类型。" +
-		"9、属性名：'img', 属性值为优化后作文结构的思维导图的图片url"
-	//"3、以 '优美句子：' 为开头对作文中的优美句子进行点评，可以有零个或多个。" +
-	//"4、以 '优美词语：' 为开头对作文中的优美词语进行点评，可以有零个或多个。" +
-	//"5、以 '思路结构：' 为开头对作文的思路结构进行点评, 只能有一个。" +
-	//"6、以 '分数：' 为开头，输出对作文的打分。"
+func CnCompositionGPT(prompt string, isStream bool) {
 	message := &Message{
 		Role:    "user",
-		Content: prompt + content,
+		Content: prompt,
 	}
 
 	messages := []*Message{message}
 
 	params := map[string]any{
-		"is_stream": true,
+		"is_stream": isStream,
 		"messages":  messages,
 	}
 	urlParams := createSign(APP_SECRET, params, nil)
 
-	dataCh := make(chan []byte, 20)
-	go func() {
-		i := 0
-		for body := range dataCh {
-			i++
-			fpath, _ := filepath.Abs(fmt.Sprintf("./cn_composition_gpt_result_%d.json", i))
-			//var data CnCompositionReviseResp
-			//err := json.Unmarshal(body, &data)
-			//if err != nil {
-			//	panic(err)
-			//}
-			//if data.Code != 20000 {
-			//	continue
-			//}
-			//fmt.Print(data.Data.Result)
-			os.WriteFile(fpath, body, 0666)
-		}
-	}()
-	httpPostStream(CN_COMPOSITION_GPT_URL+"?"+urlParams, params, dataCh)
+	if isStream {
+		dataCh := make(chan []byte, 20)
+		go func() {
+			i := 0
+			for body := range dataCh {
+				i++
+				fpath, _ := filepath.Abs(fmt.Sprintf("./cn_composition_gpt_result_%d.json", i))
+				fmt.Print(string(body))
+				os.WriteFile(fpath, body, 0666)
+			}
+		}()
+		httpPostStream(CN_COMPOSITION_GPT_URL+"?"+urlParams, params, dataCh)
+	} else {
+		body := httpPost(CN_COMPOSITION_GPT_URL+"?"+urlParams, params)
+		fmt.Println(string(body))
+	}
 }
 
 // GetCompositionContent 获取作文内容
@@ -179,19 +149,25 @@ func GetCompositionContent(resp *CnCompositionResp) (string, string) {
 	return title, content.String()
 }
 
-func EnCompositionCorrection() {
+func EnCompositionCorrection() []byte {
+	//params := map[string]any{
+	//	"question":           "my teacher",
+	//	"content":            "there is no nead to use a human to revise a passage. We am looking forward to settle down this using an easy way.   We decided to take part in this activity last week.",
+	//	"min_content_length": 200,
+	//	"grade":              "KET",
+	//	"question_type":      0,
+	//}
+
 	params := map[string]any{
-		"question":           "my teacher",
-		"content":            "there is no need to use a human to revise a passage. We am looking forward to settle down this using an easy way.   We decided to take part in this activity last week.",
-		"min_content_length": 200,
-		"grade":              "KET",
-		"question_type":      0,
+		"content": "there is no nead to use a human to revise a passage. We am looking forward to settle down this using an easy way.   We decided to take part in this activity last week.",
+		//"image_url": []string{
+		//	"https://ss-prod-genie.oss-cn-beijing.aliyuncs.com//tool-bff/voice/2024/09/10/b08b6c1b-5c14-4e03-b2e7-44b666af13a2.jpg",
+		//},
 	}
 
 	urlParams := createSign(APP_SECRET, params, nil)
 	resp := httpPost(EN_COMPOITION_CORRETION_URL+"?"+urlParams, params)
-	os.WriteFile("./en_composition_correction_params.json", resp, 0666)
-	fmt.Println("success")
+	return resp
 }
 func EnComposition() {
 	prompt := "你的角色是一名英语老师，我是一位三年级小学生，请对用户输入的作文的每个段落进行分别点评，你输出的要求如下：" +

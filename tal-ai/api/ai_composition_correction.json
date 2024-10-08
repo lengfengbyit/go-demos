@@ -1,0 +1,91 @@
+{
+  "_id": {
+    "$oid": "xxxx"
+  },
+  "user_id": "123",
+  "image_id": 22423,
+  "session_id": "xxx",
+  "message_id": 23432,
+  "subject_id": 1,
+  "msg": {
+    "score": 80,
+    "paragraphs": [
+      {
+        "image_url": "img1",
+        "paragraph_index": 0,
+        "pos": [],
+        "paragraph_first_word_box": {
+          "left_top": {
+            "x": 1,
+            "y": 2
+          }
+        }
+      }
+    ],
+    "wrong_words": [
+      {
+        "wrong_word": "错误词",
+        "correct_word": "正确词",
+        "pos": [
+          {
+            "image_md5": "img1",
+            "box": [
+              {
+                "left_top": {
+                  "x": 1,
+                  "y": 2
+                }
+              }
+            ]
+          }
+        ],
+        "is_like": 0
+      }
+    ],
+    "goods_words": [
+      {
+        "image_url": "img1",
+        "goods_word": "好词",
+        "pos": [
+          {}
+        ]
+      }
+    ],
+    "goods_sentences": [
+      {
+        "image_url": "img1",
+        "goods_sentence": "好句",
+        "pos": [
+          {}
+        ],
+        "is_like": 0
+      }
+    ],
+    "en_grammar_errors": [
+      {
+        "is_like": 0,
+        "image_url": "img1",
+        "grammar_error": "语法错误",
+        "error_box": {
+          "left_top": {
+            "x": 1,
+            "y": 2
+          }
+        }
+      }
+    ],
+    "en_statistic": {
+      "word_count": 100,
+      "sentence_count": 20,
+      "spell_error_count": 10,
+      "grammar_error_count": 2
+    }
+  },
+  "created_at": {
+    "$numberLong": "1719644175093"
+  },
+  "updated_at": {
+    "$numberLong": "1719644175093"
+  }
+}
+

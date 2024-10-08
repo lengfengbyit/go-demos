@@ -1,0 +1,41 @@
+{
+  "_id": {
+    "$oid": "xxxx"
+  },
+  "user_id": "123",
+  "image_id": "xxx",
+  "session_id": "xxx",
+  "msg_type": "composition_comments 或 paragraph_review",
+  "msg_id": {
+    "$numberLong": "1232132132113"
+  },
+  "msg": {
+    "role": 2,
+    "show_type": 1,
+    "display_content": ["当前含有敏感词"],
+    "sensitive_words": ["检测到的敏感词"],
+    "input_content": "用户输入内容",
+    "content": "ai 回复内容",
+    "prompt": "输入给 ai 的 prompt",
+    "is_like": 0,
+    "standard_infos": [
+      {
+        "step_type": "assignment",
+        "step_path": "label",
+        "audio_txt": "亮点\n"
+      },
+      {
+        "step_type": "conception",
+        "step_path": "text",
+        "audio_txt": "勃发的生机：柳树在春天的生长象征着万物复苏和生命力的勃发。"
+      }
+    ]
+  },
+  "created_at": {
+    "$numberLong": "1719644175093"
+  },
+  "updated_at": {
+    "$numberLong": "1719644175093"
+  }
+}
+

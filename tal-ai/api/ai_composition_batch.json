@@ -1,0 +1,16 @@
+{
+  "id": 1,
+  "batch_id": 13222,
+  "user_id": "5678",
+  "device_id": "xxx",
+  "subject_id": 1,
+  "image_urls": [
+    "img1",
+    "img2"
+  ],
+  "title": "",
+  "content": "xxx",
+  "extra": "",
+  "created_at": 1719644174940,
+  "updated_at": 1719644174940
+}

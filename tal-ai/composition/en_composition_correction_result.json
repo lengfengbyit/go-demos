@@ -1,0 +1,236 @@
+{
+  "code": 20000,
+  "data": {
+    "features_result": {
+      "avg_sentence_length": 11.67,
+      "level_words_and_ratio": {
+        "KET": "28/34",
+        "PET": "3/34",
+        "over_PET": "2/34",
+        "path_id": "root-features_result-level_words_and_ratio"
+      },
+      "num_sentences": 3,
+      "num_words": 34,
+      "num_words_unique": 28,
+      "path_id": "root-features_result",
+      "readability": {
+        "avg_sentence_length": 11.33,
+        "path_id": "root-features_result-readability",
+        "score": 68.44,
+        "word_length": 1.5
+      }
+    },
+    "gec_result": [
+      {
+        "corrected_text": "There is no need to use a human to revise a passage.",
+        "error_info": [
+          {
+            "corrected_words": "There",
+            "end_pos": 5,
+            "error_description": "there 应当替换为There",
+            "error_type_level_one": "细节错误",
+            "error_type_level_two": "大小写或空格错误",
+            "path_id": "root-gec_result-0-error_info-0",
+            "prob": 0.6373072826966664,
+            "start_pos": 0,
+            "wrong_words": "there"
+          },
+          {
+            "corrected_words": "need",
+            "end_pos": 16,
+            "error_description": "nead 应当替换为need",
+            "error_type_level_one": "拼写错误",
+            "error_type_level_two": "拼写错误",
+            "path_id": "root-gec_result-0-error_info-1",
+            "prob": 0.9461915471188748,
+            "start_pos": 12,
+            "wrong_words": "nead"
+          }
+        ],
+        "path_id": "root-gec_result-0",
+        "sentence_id": 0
+      },
+      {
+        "corrected_text": "We are looking forward to settling down this using an easy way.",
+        "error_info": [
+          {
+            "corrected_words": "are",
+            "end_pos": 5,
+            "error_description": "am 应当替换为are",
+            "error_type_level_one": "语法错误",
+            "error_type_level_two": "动词时态错误",
+            "path_id": "root-gec_result-1-error_info-0",
+            "prob": 0.694667015683594,
+            "start_pos": 3,
+            "wrong_words": "am"
+          },
+          {
+            "corrected_words": "settling",
+            "end_pos": 31,
+            "error_description": "settle 应当替换为settling",
+            "error_type_level_one": "语法错误",
+            "error_type_level_two": "不定式/动名词错误",
+            "path_id": "root-gec_result-1-error_info-1",
+            "prob": 0.5682606603517768,
+            "start_pos": 25,
+            "wrong_words": "settle"
+          }
+        ],
+        "path_id": "root-gec_result-1",
+        "sentence_id": 1
+      }
+    ],
+    "original_essay_info": {
+      "original_paragraph_list": [
+        "there is no nead to use a human to revise a passage. We am looking forward to settle down this using an easy way.   We decided to take part in this activity last week."
+      ],
+      "original_sentence_list": [
+        {
+          "original_text": "there is no nead to use a human to revise a passage. ",
+          "paragraph_id": 0,
+          "path_id": "root-original_essay_info-original_sentence_list-0",
+          "sentence_id": 0
+        },
+        {
+          "original_text": "We am looking forward to settle down this using an easy way.   ",
+          "paragraph_id": 0,
+          "path_id": "root-original_essay_info-original_sentence_list-1",
+          "sentence_id": 1
+        },
+        {
+          "original_text": "We decided to take part in this activity last week.",
+          "paragraph_id": 0,
+          "path_id": "root-original_essay_info-original_sentence_list-2",
+          "sentence_id": 2
+        }
+      ],
+      "path_id": "root-original_essay_info",
+      "title": ""
+    },
+    "overall_result": {
+      "category_score": {
+        "content": {
+          "comment": "文章内容稍有缺失，要注意题目的要求哦，加油！",
+          "path_id": "root-overall_result-category_score-content",
+          "score": 3.0
+        },
+        "language": {
+          "category_comment": {
+            "gec": "出现了2个语法错误，在这方面要注意加强！",
+            "num_words": "词汇量还有所欠缺，需要继续努力！",
+            "path_id": "root-overall_result-category_score-language-category_comment",
+            "sentence": "使用了较多长难句，体现了较高英语句法水平，非常好！",
+            "spell": "出现了1个拼写错误，需要注意下哦～"
+          },
+          "comment": "文章的词汇比较丰富，语法错误方面存在一些错误，很不错哦！",
+          "path_id": "root-overall_result-category_score-language",
+          "score": 4.0
+        },
+        "organization": {
+          "comment": "文章组织混乱，一定注意正确使用连词，增加句子间的连贯性，要加油哦～",
+          "path_id": "root-overall_result-category_score-organization",
+          "score": 1.0
+        },
+        "path_id": "root-overall_result-category_score"
+      },
+      "path_id": "root-overall_result",
+      "total_comment": "文章组织较混乱，注意正确使用连词，增加句子间的连贯性，可以尝试运用更多的连词，增加句子的连贯性，整体内容稍有缺失，要注意题目的要点写完整，文章使用较多词汇，语法运用得当，继续加油！",
+      "total_score": 8.0
+    },
+    "path_id": "root",
+    "suggestion": [
+      {
+        "candidates": [
+          "voted",
+          "chose"
+        ],
+        "path_id": "root-suggestion-0",
+        "word": "decide",
+        "word_info": {
+          "end_pos": 10,
+          "path_id": "root-suggestion-0-word_info",
+          "sentence_id": 2,
+          "start_pos": 3
+        }
+      },
+      {
+        "candidates": [
+          "do",
+          "conduct"
+        ],
+        "path_id": "root-suggestion-1",
+        "word": "take",
+        "word_info": {
+          "end_pos": 18,
+          "path_id": "root-suggestion-1-word_info",
+          "sentence_id": 2,
+          "start_pos": 14
+        }
+      }
+    ],
+    "writing_highlight": {
+      "clause_info": {
+        "adverbial_clause": {
+          "descriptions": "状语从句指句子用作状语时，起副词作用的句子，可以修饰谓语、非谓语动词、定语、状语或整个句子，可分为时间、地点、原因、条件、目的、结果、让步、方式和比较等从句。灵活运用状语从句，可丰富行文句式，提升文章的书面性。",
+          "info": [],
+          "path_id": "root-writing_highlight-clause_info-adverbial_clause"
+        },
+        "attributive_clause": {
+          "descriptions": "定语从句是由关系代词和关系副词引导的从句，用来修饰名词或代词，起到定语的作用，通常分为限定性和非限定性从句两种。定语从句需要放在被修饰的词（即先行词）之后，一般由关系代词来引导，关系代词必须放在定语从句之首。灵活运用定语从句，可丰富行文句式，提升文章的书面性。",
+          "info": [],
+          "path_id": "root-writing_highlight-clause_info-attributive_clause"
+        },
+        "object_clause": {
+          "descriptions": "宾语从句是名词性从句的一种，在句子中起宾语作用，位于及物动词、介词或复合谓语之后的从句称为宾语从句，是从句中出现率最高难度最大的类型之一。灵活运用宾语从句，可丰富行文句式，提升文章的书面性。",
+          "info": [],
+          "path_id": "root-writing_highlight-clause_info-object_clause"
+        },
+        "path_id": "root-writing_highlight-clause_info"
+      },
+      "conjunctions_info": {
+        "conjunction_list": [],
+        "conjunctions_descriptions": {
+          "addition": "表递进关系的连词",
+          "causality": "表因果关系的连词",
+          "comparison": "表对比关系的连词",
+          "contrast": "表转折关系的连词",
+          "example": "表解释说明的连词",
+          "path_id": "root-writing_highlight-conjunctions_info-conjunctions_descriptions",
+          "summary": "表总结的连词",
+          "time_sequence": "表时间顺序的连词"
+        },
+        "path_id": "root-writing_highlight-conjunctions_info"
+      },
+      "path_id": "root-writing_highlight",
+      "phrases": [
+        {
+          "end_pos": 24,
+          "meaning": "盼望",
+          "path_id": "root-writing_highlight-phrases-0",
+          "sentence": "look forward to",
+          "sentence_id": 1,
+          "start_pos": 6
+        },
+        {
+          "end_pos": 18,
+          "meaning": "决定做某事",
+          "path_id": "root-writing_highlight-phrases-1",
+          "sentence": "decide to do sth.",
+          "sentence_id": 2,
+          "start_pos": 3
+        },
+        {
+          "end_pos": 26,
+          "meaning": "参加（活动）",
+          "path_id": "root-writing_highlight-phrases-2",
+          "sentence": "take part in",
+          "sentence_id": 2,
+          "start_pos": 14
+        }
+      ],
+      "sentence_patterns": []
+    }
+  },
+  "msg": "success",
+  "requestId": "17272572793701288555952845471744"
+}

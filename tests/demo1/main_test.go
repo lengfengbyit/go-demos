@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"unicode"
 )
 
 func TestMain(m *testing.M) {
@@ -48,4 +49,21 @@ func TestAdd(t *testing.T) {
 			}
 		})
 	}
+}
+
+// countEnglishChars 返回字符串中英文字符的数量
+func countEnglishChars(s string) int {
+	count := 0
+	for _, char := range s {
+		if unicode.IsLetter(char) && (unicode.IsUpper(char) || unicode.IsLower(char)) {
+			count++
+		}
+	}
+	return count
+}
+
+func TestCountEnglishChars(t *testing.T) {
+	testString := "Hello, 世界! This is a test."
+	count := countEnglishChars(testString)
+	fmt.Printf("Number of English characters in \"%s\": %d\n", testString, count)
 }
